@@ -1,4 +1,4 @@
-typedef uint16_t Time;
+typedef uint32_t Time;
 
 class Note {
 public:
@@ -23,6 +23,7 @@ public:
 class FloppyDriveHeadInstrument : public IInstrument {
 public:
   static const uint16_t DEFAULT_N_POSITIONS = 80;  // for general 3.5 and 5.25 720K+
+  static const uint16_t TIME_TO_WAIT_AFTER_RESET = 100;
 
 protected:
   const uint8_t direction_pin;
@@ -36,7 +37,7 @@ protected:
   Time current_halfperiod;
   Time inactive_time;
 
-  void step() {
+  void toggle_stepping() {
     // reverse if end has been reached
     if (
       (direction == HIGH && position >= n_positions - 1)
@@ -46,14 +47,16 @@ protected:
       digitalWrite(direction_pin, direction);
     }
 
-    digitalWrite(step_pin, HIGH);
-    is_stepping = true;
-
-    if (direction == HIGH) {
-      ++position;
-    } else {
-      --position;
+    if (is_stepping) {
+      if (direction == HIGH) {
+        ++position;
+      } else {
+        --position;
+      }
     }
+
+    digitalWrite(step_pin, is_stepping ? LOW : HIGH);
+    is_stepping = !is_stepping;
   }
 
 public:
@@ -64,7 +67,7 @@ public:
     pinMode(direction_pin, OUTPUT);
     pinMode(step_pin, OUTPUT);
     reset();
-    delay(100);
+    delay(TIME_TO_WAIT_AFTER_RESET);  // wait for safety
   }
 
   void tick(Time time) override {
@@ -74,16 +77,8 @@ public:
 
     inactive_time += time;
     if (inactive_time >= current_halfperiod) {
-      if (is_stepping) {
-        digitalWrite(step_pin, LOW);
-        is_stepping = false;
-      }
-      else {
-        step();
-      }
+      toggle_stepping();
       inactive_time %= current_halfperiod;
-    }
-    else if (is_stepping == true) {
     }
   }
 
@@ -139,7 +134,7 @@ public:
   }
 };
 
-const Note * notes[] = {
+const Note * notes[] {
   // octave -1
   new Note("", 8.18), new Note("", 8.66), new Note("", 9.18), new Note("", 9.72), new Note("", 10.30), new Note("", 10.91),
   new Note("", 11.56), new Note("", 12.25), new Note("", 12.98), new Note("", 13.75), new Note("", 14.57), new Note("", 15.43),
@@ -283,7 +278,8 @@ void loop() {
     int8_t data = Serial.read() % 256;
   }
 
-  delayMicroseconds(TICK_LENGTH);
+  delay(TICK_LENGTH / 1000);
+  delayMicroseconds((uint16_t) TICK_LENGTH);
   for (auto instrument : instruments) {
     instrument->tick(TICK_LENGTH);
   }
