@@ -33,7 +33,7 @@ protected:
   int16_t position;
   bool is_stepping;
   const Note * current_note;
-  Time current_period;
+  Time current_halfperiod;
   Time inactive_time;
 
   void step() {
@@ -42,7 +42,7 @@ protected:
       (direction == HIGH && position >= n_positions - 1)
       || (direction == LOW && position <= 0)
     ) {
-      direction = ~direction;
+      direction = direction == HIGH ? LOW : HIGH;
       digitalWrite(direction_pin, direction);
     }
 
@@ -73,13 +73,17 @@ public:
     }
 
     inactive_time += time;
-    if (inactive_time >= current_period) {
-      step();
-      inactive_time %= current_period;
+    if (inactive_time >= current_halfperiod) {
+      if (is_stepping) {
+        digitalWrite(step_pin, LOW);
+        is_stepping = false;
+      }
+      else {
+        step();
+      }
+      inactive_time %= current_halfperiod;
     }
     else if (is_stepping == true) {
-      digitalWrite(step_pin, LOW);
-      is_stepping = false;
     }
   }
 
@@ -87,7 +91,7 @@ public:
     digitalWrite(step_pin, LOW);
     is_stepping = false;
     current_note = nullptr;
-    current_period = 0;
+    current_halfperiod = 0;
     inactive_time = 0;
   }
 
@@ -112,7 +116,7 @@ public:
     }
     else {
       current_note = note;
-      current_period = note->period / 2;
+      current_halfperiod = note->period / 2;
     }
   }
 
@@ -121,7 +125,7 @@ public:
       return;
     }
     current_note = nullptr;
-    current_period = 0;
+    current_halfperiod = 0;
     inactive_time = 0;
 
     // reverse to direction with more available steps to hold a next note longer
@@ -129,7 +133,7 @@ public:
       (direction == HIGH && position >= n_positions / 2)
       || (direction == LOW && position < n_positions / 2)
     ) {
-      direction = ~direction;
+      direction = direction == HIGH ? LOW : HIGH;
       digitalWrite(direction_pin, direction);
     }
   }
