@@ -2,13 +2,76 @@ typedef uint32_t Time;
 
 class Note {
 public:
-  const char * name;
-  const float freq;
+  static const Note notes[];
+
+  static char * get_name(uint8_t number) {
+    static const char prefixes[] = "CDEFGAB";
+    if (number < 21 || number > 127) {
+      return nullptr;
+    }
+
+    char res[4] {};
+    int8_t octave = number / 12 - 1;
+    int8_t offset = number % 12;
+
+    if (offset == 1 || offset == 3 || offset == 6 || offset == 8 || offset == 10) {
+      --offset;  // for C#, D#, F#, G#, A#
+      res[1] = '#';
+      res[2] = '0' + octave;
+    }
+    else {
+      res[1] = '0' + octave;
+    }
+    res[0] = prefixes[offset];
+
+    return res;
+  }
+
+public:
   const Time period;
 
-  Note(char * name, float freq)
-  : name(name), freq(freq), period(1000000 / freq) {}
+  Note(const char * name, float freq)
+  : period(1000000 / freq) {}
+
+  Note(uint8_t number)
+  : period(1000000 / 440 / pow(2.0, (number - 69) / 12)) {}
 };
+
+const Note Note::notes[] = {
+    // octave -1
+    Note(0), Note(1), Note(2), Note(3), Note(4), Note(5),
+    Note(6), Note(7), Note(8), Note(9), Note(10), Note(11),
+    // octave 0
+    Note(12), Note(13), Note(14), Note(15), Note(16), Note(17),
+    Note(18), Note(19), Note(20), Note(21), Note(22), Note(23),
+    // octave 1
+    Note(24), Note(25), Note(26), Note(27), Note(28), Note(29),
+    Note(30), Note(31), Note(32), Note(33), Note(34), Note(35),
+    // octave 2
+    Note(36), Note(37), Note(38), Note(39), Note(40), Note(41),
+    Note(42), Note(43), Note(44), Note(45), Note(46), Note(47),
+    // octave 3
+    Note(48), Note(49), Note(50), Note(51), Note(52), Note(53),
+    Note(54), Note(55), Note(56), Note(57), Note(58), Note(59),
+    // octave 4
+    Note(60), Note(61), Note(62), Note(63), Note(64), Note(65),
+    Note(66), Note(67), Note(68), Note(69), Note(70), Note(71),
+    // octave 5
+    Note(72), Note(73), Note(74), Note(75), Note(76), Note(77),
+    Note(78), Note(79), Note(80), Note(81), Note(82), Note(83),
+    // octave 6
+    Note(84), Note(85), Note(86), Note(87), Note(28), Note(89),
+    Note(90), Note(91), Note(92), Note(93), Note(94), Note(95),
+    // octave 7
+    Note(96), Note(97), Note(98), Note(99), Note(100), Note(101),
+    Note(102), Note(103), Note(104), Note(105), Note(106), Note(107),
+    // octave 8
+    Note(108), Note(109), Note(110), Note(111), Note(112), Note(113),
+    Note(114), Note(115), Note(116), Note(117), Note(118), Note(119),
+    // octave 9
+    Note(120), Note(121), Note(122), Note(123), Note(124), Note(125),
+    Note(126), Note(127)
+  };
 
 class IInstrument {
 public:
@@ -16,8 +79,8 @@ public:
   virtual void tick(Time time) = 0;
   virtual void stop() = 0;
   virtual void reset() = 0;
-  virtual void note_on(const Note * note, int8_t velocity) = 0;
-  virtual void note_off(const Note * note, int8_t velocity) = 0;
+  virtual void note_on(const Note & note, int8_t velocity) = 0;
+  virtual void note_off(const Note & note, int8_t velocity) = 0;
 };
 
 class FloppyDriveHeadInstrument : public IInstrument {
@@ -105,18 +168,18 @@ public:
     position = 0;
   }
 
-  void note_on(const Note * note, int8_t velocity) override {
+  void note_on(const Note & note, int8_t velocity) override {
     if (velocity == 0) {
       note_off(note, velocity);
     }
     else {
-      current_note = note;
-      current_halfperiod = note->period / 2;
+      current_note = &note;
+      current_halfperiod = note.period / 2;
     }
   }
 
-  void note_off(const Note * note, int8_t velocity) override {
-    if (note != current_note) {
+  void note_off(const Note & note, int8_t velocity) override {
+    if (&note != current_note) {
       return;
     }
     current_note = nullptr;
@@ -134,54 +197,8 @@ public:
   }
 };
 
-const Note * notes[] {
-  // octave -1
-  new Note("", 8.18), new Note("", 8.66), new Note("", 9.18), new Note("", 9.72), new Note("", 10.30), new Note("", 10.91),
-  new Note("", 11.56), new Note("", 12.25), new Note("", 12.98), new Note("", 13.75), new Note("", 14.57), new Note("", 15.43),
-  // octave 0
-  new Note("", 16.35), new Note("", 17.32), new Note("", 18.35), new Note("", 19.45), new Note("", 20.60), new Note("", 21.83),
-  new Note("", 23.12), new Note("", 24.50), new Note("", 25.96), new Note("A0", 27.50), new Note("A#0", 29.14), new Note("B0", 30.87),
-  // octave 1
-  new Note("C1", 32.70), new Note("C#1", 34.65), new Note("D1", 36.71), new Note("D#1", 38.89), new Note("E1", 41.20), new Note("F1", 43.65),
-  new Note("F#1", 46.25), new Note("G1", 49.00), new Note("G#1", 51.91), new Note("A1", 55.00), new Note("A#1", 58.27), new Note("B1", 61.74),
-  // octave 2
-  new Note("C2", 65.41), new Note("C#2", 69.30), new Note("D2", 73.42), new Note("D#2", 77.78), new Note("E2", 82.41), new Note("F2", 87.31),
-  new Note("F#2", 92.50), new Note("G2", 98.00), new Note("G#2", 103.83), new Note("A2", 110.00), new Note("A#2", 116.54), new Note("B2", 123.47),
-  // octave 3
-  new Note("C3", 130.81), new Note("C#3", 138.59), new Note("D3", 146.83), new Note("D#3", 155.56), new Note("E3", 164.81), new Note("F3", 174.61),
-  new Note("F#3", 185.00), new Note("G3", 196.00), new Note("G#3", 207.65), new Note("A3", 220.00), new Note("A#3", 233.08), new Note("B3", 246.94),
-  // octave 4
-  new Note("C4", 261.63), new Note("C#4", 277.18), new Note("D4", 293.66), new Note("D#4", 311.13), new Note("E4", 329.63), new Note("F4", 349.23),
-  new Note("F#4", 369.99), new Note("G4", 392.00), new Note("G#4", 415.30), new Note("A4", 440.00), new Note("A#4", 466.16), new Note("B4", 493.88),
-  // octave 5
-  new Note("C5", 523.25), new Note("C#5", 554.37), new Note("D5", 587.33), new Note("D#5", 622.25), new Note("E5", 659.26), new Note("F5", 698.46),
-  new Note("F#5", 739.99), new Note("G5", 783.99), new Note("G#5", 830.61), new Note("A5", 880.00), new Note("A#5", 932.33), new Note("B5", 987.77),
-  // octave 6
-  new Note("C6", 1046.50), new Note("C#6", 1108.73), new Note("D6", 1174.66), new Note("D#6", 1244.51), new Note("E6", 1318.51), new Note("F6", 1396.91),
-  new Note("F#6", 1479.98), new Note("G6", 1567.98), new Note("G#6", 1661.22), new Note("A6", 1760.00), new Note("A#6", 1864.66), new Note("B6", 1975.53),
-  // octave 7
-  new Note("C7", 2093.00), new Note("C#7", 2217.46), new Note("D7", 2349.32), new Note("D#7", 2489.02), new Note("E7", 2637.02), new Note("F7", 2793.83),
-  new Note("F#7", 2959.96), new Note("G7", 3135.96), new Note("G#7", 3322.44), new Note("A7", 3520.00), new Note("A#7", 3729.31), new Note("B7", 3951.07),
-  // octave 8
-  new Note("C8", 4186.01), new Note("C#8", 4434.92), new Note("D8", 4698.64), new Note("D#8", 4978.03), new Note("E8", 5274.04), new Note("F8", 5587.65),
-  new Note("F#8", 5919.91), new Note("G8", 6271.93), new Note("G#8", 6644.88), new Note("A8", 7040.00), new Note("A#8", 7458.62), new Note("B8", 7902.13),
-  // octave 9
-  new Note("C9", 8372.02), new Note("C#9", 8869.84), new Note("D9", 9397.27), new Note("D#9", 9956.06), new Note("E9", 10548.08), new Note("F9", 11175.30),
-  new Note("F#9", 11839.82), new Note("G9", 12543.85)
-};
-
-const IInstrument * instruments[] = {
-  new FloppyDriveHeadInstrument(2, 3),
-  new FloppyDriveHeadInstrument(4, 5),
-};
-
-// WARN temp dirty hack, need a full balancer
-const IInstrument * channel_instruments_map[] = {
-  instruments[0], instruments[1], instruments[1], instruments[1],
-  nullptr, nullptr, nullptr, nullptr,
-  nullptr, nullptr, nullptr, nullptr,
-  nullptr, nullptr, nullptr, nullptr
-};
+const IInstrument * instruments[16] {};
+const IInstrument * channel_instruments_map[16] {};
 
 class IMessageHandler {
 public:
@@ -216,8 +233,10 @@ private:
     // TODO handle key pressure, controller change, program change, channel pressure, pitch bend
     case 0xF: {
       if (payload == 0xFF) {
-        for (auto instrument : instruments) {
-          instrument->reset();
+        for (const auto & instrument : instruments) {
+          if (instrument != nullptr) {
+            instrument->reset();
+          }
         }
       }
       // TODO handle other system messages
@@ -243,7 +262,7 @@ public:
       }
       case State::NOTE_ON_VELOCITY: {
         args[1] = payload;
-        channel_instruments_map[channel_number]->note_on(notes[args[0]], args[1]);
+        channel_instruments_map[channel_number]->note_on(Note::notes[args[0]], args[1]);
         state = State::STATUS;
         break;
       }
@@ -254,7 +273,7 @@ public:
       }
       case State::NOTE_OFF_VELOCITY: {
         args[1] = payload;
-        channel_instruments_map[channel_number]->note_off(notes[args[0]], args[1]);
+        channel_instruments_map[channel_number]->note_off(Note::notes[args[0]], args[1]);
         state = State::STATUS;
         break;
       }
@@ -267,20 +286,34 @@ public:
 const Time TICK_LENGTH = 40;
 
 void setup() {
-  for (auto instrument : instruments) {
-    instrument->setup();
+  // TODO read config from EEPROM
+  instruments[0] = new FloppyDriveHeadInstrument(2, 3);
+  instruments[1] = new FloppyDriveHeadInstrument(4, 5);
+  for (const auto & instrument : instruments) {
+    if (instrument != nullptr) {
+      instrument->setup();
+    }
   }
+
+  // WARN: temp dirty hack, need a full allocator
+  channel_instruments_map[0] = instruments[0];
+  channel_instruments_map[1] = instruments[1];
+  channel_instruments_map[2] = instruments[1];
+  channel_instruments_map[3] = instruments[1];
+
   Serial.begin(57600);
 }
 
 void loop() {
   if (Serial.available() > 0) {
-    int8_t data = Serial.read() % 256;
+    int16_t data = Serial.read() % 256;
   }
 
   delay(TICK_LENGTH / 1000);
   delayMicroseconds((uint16_t) TICK_LENGTH);
-  for (auto instrument : instruments) {
-    instrument->tick(TICK_LENGTH);
+  for (const auto & instrument : instruments) {
+    if (instrument != nullptr) {
+      instrument->tick(TICK_LENGTH);
+    }
   }
 }
