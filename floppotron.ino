@@ -27,6 +27,15 @@ public:
     return res;
   }
 
+  static float get_freq(uint8_t number) {
+    float exp = (float) (number - 69) / 12;
+    return 440.0 * pow(2, exp);
+  }
+
+  static float get_period(uint8_t number) {
+    return 1000000.0 / get_freq(number);
+  }
+
 public:
   const Time period;
 
@@ -34,7 +43,7 @@ public:
   : period(1000000 / freq) {}
 
   Note(uint8_t number)
-  : period(1000000 / 440 / pow(2.0, (number - 69) / 12)) {}
+  : period(get_period(number)) {}
 };
 
 const Note Note::notes[] = {
