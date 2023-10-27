@@ -11,8 +11,8 @@ public:
     }
 
     char res[4] {};
-    int8_t octave = number / 12 - 1;
-    int8_t offset = number % 12;
+    uint8_t octave = number / 12 - 1;
+    uint8_t offset = number % 12;
 
     if (offset == 1 || offset == 3 || offset == 6 || offset == 8 || offset == 10) {
       --offset;  // for C#, D#, F#, G#, A#
@@ -27,12 +27,11 @@ public:
     return res;
   }
 
-  static float get_freq(uint8_t number) {
-    float exp = (float) (number - 69) / 12;
-    return 440.0 * pow(2, exp);
+  static constexpr float get_freq(uint8_t number) {
+    return 440.0 * pow(2, (float) (number - 69) / 12);
   }
 
-  static float get_period(uint8_t number) {
+  static constexpr float get_period(uint8_t number) {
     return 1000000.0 / get_freq(number);
   }
 
@@ -42,7 +41,7 @@ public:
   Note(const char * name, float freq)
   : period(1000000 / freq) {}
 
-  Note(uint8_t number)
+  constexpr Note(uint8_t number)
   : period(get_period(number)) {}
 };
 
@@ -88,8 +87,8 @@ public:
   virtual void tick(Time time) = 0;
   virtual void stop() = 0;
   virtual void reset() = 0;
-  virtual void note_on(const Note & note, int8_t velocity) = 0;
-  virtual void note_off(const Note & note, int8_t velocity) = 0;
+  virtual void note_on(const Note & note, uint8_t velocity) = 0;
+  virtual void note_off(const Note & note, uint8_t velocity) = 0;
 };
 
 class FloppyDriveHeadInstrument : public IInstrument {
@@ -109,14 +108,18 @@ protected:
   Time current_halfperiod;
   Time inactive_time;
 
+  void reverse() {
+    direction = direction == HIGH ? LOW : HIGH;
+    digitalWrite(direction_pin, direction);
+  }
+
   void toggle_stepping() {
     // reverse if end has been reached
     if (
       (direction == HIGH && position >= n_positions - 1)
       || (direction == LOW && position <= 0)
     ) {
-      direction = direction == HIGH ? LOW : HIGH;
-      digitalWrite(direction_pin, direction);
+      reverse();
     }
 
     if (is_stepping) {
@@ -169,15 +172,15 @@ public:
 
     for (uint16_t i = 0; i < n_positions; i++) {
       digitalWrite(step_pin, HIGH);
-      delay(5);
+      delay(1);
       digitalWrite(step_pin, LOW);
-      delay(5);
+      delay(1);
     }
 
     position = 0;
   }
 
-  void note_on(const Note & note, int8_t velocity) override {
+  void note_on(const Note & note, uint8_t velocity) override {
     if (velocity == 0) {
       note_off(note, velocity);
     }
@@ -187,21 +190,18 @@ public:
     }
   }
 
-  void note_off(const Note & note, int8_t velocity) override {
+  void note_off(const Note & note, uint8_t velocity) override {
     if (&note != current_note) {
       return;
     }
-    current_note = nullptr;
-    current_halfperiod = 0;
-    inactive_time = 0;
+    stop();
 
     // reverse to direction with more available steps to hold a next note longer
     if (
       (direction == HIGH && position >= n_positions / 2)
       || (direction == LOW && position < n_positions / 2)
     ) {
-      direction = direction == HIGH ? LOW : HIGH;
-      digitalWrite(direction_pin, direction);
+      reverse();
     }
   }
 };
@@ -211,93 +211,114 @@ const IInstrument * channel_instruments_map[16] {};
 
 class IMessageHandler {
 public:
-  virtual void handle_byte(int8_t payload) = 0;
+  virtual void handle_byte(uint8_t payload) = 0;
 };
 
 class MessageHandler {
-public:
-  enum class State { STATUS, NOTE_ON_PITCH, NOTE_ON_VELOCITY, NOTE_OFF_PITCH, NOTE_OFF_VELOCITY };
-
 private:
+  enum class State {
+    STATUS, NOTE_OFF_PITCH, NOTE_OFF_VELOCITY, NOTE_ON_PITCH, NOTE_ON_VELOCITY,
+    KEY_PRESSURE_KEY, KEY_PRESSURE_PRESSURE, CONTROLLER_CHANGE_CONTROLLER, CONTROLLER_CHANGE_VALUE,
+    PROGRAM_CHANGE_PRESET, CHANNEL_PRESSURE_PRESSURE, PITCH_BEND_LSB, PITCH_BEND_MSB,
+    SYSEX, SONG_POSITION_LSB, SONG_POSITION_MSB, SONG_SELECT_NUMBER, BUS_SELECT_NUMBER
+  };
+
   State state;
-  int8_t channel_number;
-  int8_t args[4];
+  IInstrument * instrument;
+  uint8_t channel_number;
+  uint8_t params[2];
 
-  void handle_status_byte(int8_t payload) {
-    int8_t command_nibble = payload >> 4;
-    if (!command_nibble) {
-      return;
-    }
-    channel_number = payload & 0xF;
-
-    switch (command_nibble) {
-    case 0x8: {
-      state = State::NOTE_ON_PITCH;
-      break;
-    }
-    case 0x9: {
-      state = State::NOTE_OFF_PITCH;
-      break;
-    }
-    // TODO handle key pressure, controller change, program change, channel pressure, pitch bend
-    case 0xF: {
-      if (payload == 0xFF) {
-        for (const auto & instrument : instruments) {
-          if (instrument != nullptr) {
-            instrument->reset();
-          }
+  void handle_status_meta(uint8_t payload) {
+    if (payload == 0xFF) {
+      for (const auto & instrument : instruments) {
+        if (instrument != nullptr) {
+          instrument->reset();
         }
       }
-      // TODO handle other system messages
-      break;
     }
-    default:
-      break;
+    // TODO handle other system messages
+  }
+
+  void handle_status(uint8_t payload) {
+    static const State after_status_states_map[7] {
+      State::NOTE_OFF_PITCH, State::NOTE_ON_PITCH, State::KEY_PRESSURE_KEY,
+      State::CONTROLLER_CHANGE_CONTROLLER, State::PROGRAM_CHANGE_PRESET,
+      State::CHANNEL_PRESSURE_PRESSURE, State::PITCH_BEND_LSB
+    };
+
+    if (payload & 0b10000000 == 0) {
+      return;  // not a status
     }
+
+    uint8_t command_nibble = payload >> 4;
+    if (command_nibble == 0xF) {
+      handle_status_meta(payload);
+      return;
+    }
+
+    channel_number = payload & 0b00001111;
+    instrument = channel_instruments_map[channel_number];
+    state = after_status_states_map[command_nibble & 0b00000111];
   }
 
 public:
   MessageHandler() : state(State::STATUS) {}
-  void handle_byte(int8_t payload) {
+
+  void handle_byte(uint8_t payload) {
+    if (payload & 0b10000000) {
+      state = State::STATUS;  // reset message if it is a status byte
+    }
+
     switch (state) {
       case State::STATUS: {
-        handle_status_byte(payload);
-        break;
-      }
-      case State::NOTE_ON_PITCH: {
-        args[0] = payload;
-        state = State::NOTE_ON_VELOCITY;
-        break;
-      }
-      case State::NOTE_ON_VELOCITY: {
-        args[1] = payload;
-        channel_instruments_map[channel_number]->note_on(Note::notes[args[0]], args[1]);
-        state = State::STATUS;
+        handle_status(payload);
         break;
       }
       case State::NOTE_OFF_PITCH: {
-        args[0] = payload;
+        params[0] = payload;
         state = State::NOTE_OFF_VELOCITY;
         break;
       }
       case State::NOTE_OFF_VELOCITY: {
-        args[1] = payload;
-        channel_instruments_map[channel_number]->note_off(Note::notes[args[0]], args[1]);
+        params[1] = payload;
+        if (instrument != nullptr) {
+          instrument->note_off(Note::notes[params[0]], params[1]);
+        }
         state = State::STATUS;
         break;
       }
+      case State::NOTE_ON_PITCH: {
+        params[0] = payload;
+        state = State::NOTE_ON_VELOCITY;
+        break;
+      }
+      case State::NOTE_ON_VELOCITY: {
+        params[1] = payload;
+        if (instrument != nullptr) {
+          instrument->note_on(Note::notes[params[0]], params[1]);
+        }
+        state = State::STATUS;
+        break;
+      }
+      // TODO handle key pressure, controller change, program change, channel pressure, pitch bend
       default:
+        state = State::STATUS;
         break;
     }
   }
 };
 
 const Time TICK_LENGTH = 40;
+const MessageHandler message_handler;
 
 void setup() {
   // TODO read config from EEPROM
   instruments[0] = new FloppyDriveHeadInstrument(2, 3);
   instruments[1] = new FloppyDriveHeadInstrument(4, 5);
+  instruments[2] = new FloppyDriveHeadInstrument(6, 7);
+  instruments[3] = new FloppyDriveHeadInstrument(8, 9);
+  instruments[4] = new FloppyDriveHeadInstrument(10, 11);
+  instruments[5] = new FloppyDriveHeadInstrument(12, 13);
   for (const auto & instrument : instruments) {
     if (instrument != nullptr) {
       instrument->setup();
@@ -307,15 +328,19 @@ void setup() {
   // WARN: temp dirty hack, need a full allocator
   channel_instruments_map[0] = instruments[0];
   channel_instruments_map[1] = instruments[1];
-  channel_instruments_map[2] = instruments[1];
-  channel_instruments_map[3] = instruments[1];
+  channel_instruments_map[2] = instruments[2];
+  channel_instruments_map[3] = instruments[3];
+  channel_instruments_map[4] = instruments[4];
+  channel_instruments_map[10] = instruments[5];
 
   Serial.begin(57600);
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    int16_t data = Serial.read() % 256;
+  while (Serial.available() > 0) {
+    uint8_t data = (uint8_t) Serial.read();
+    message_handler.handle_byte(data);
+    Serial.write(data);
   }
 
   delay(TICK_LENGTH / 1000);
