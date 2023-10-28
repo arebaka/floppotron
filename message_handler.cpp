@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "HardwareSerial.h"
 #include "message_handler.h"
 
 void MessageHandler::handle_status_meta(uint8_t payload) {
@@ -29,12 +29,11 @@ void MessageHandler::handle_status(uint8_t payload) {
   }
 
   channel_number = payload & 0b00001111;
-  instrument = channel_instruments_map[channel_number];
   state = after_status_states_map[command_nibble & 0b00000111];
 }
 
-MessageHandler::MessageHandler(uint16_t n_instruments, IInstrument ** instruments, IInstrument ** channel_instruments_map)
-  : n_instruments(n_instruments), instruments(instruments), channel_instruments_map(channel_instruments_map), state(State::STATUS) {}
+MessageHandler::MessageHandler(uint16_t n_instruments, IInstrument ** instruments, INotesAllocator * allocator)
+  : n_instruments(n_instruments), instruments(instruments), allocator(allocator) {}
 
 void MessageHandler::handle_byte(uint8_t payload) {
   if (payload & 0b10000000) {
@@ -52,9 +51,7 @@ void MessageHandler::handle_byte(uint8_t payload) {
     }
     case State::NOTE_OFF_VELOCITY: {
       params[1] = payload;
-      if (instrument != nullptr) {
-        instrument->note_off(Note::notes[params[0]], params[1]);
-      }
+      allocator->note_off(channel_number, Note::pitches[params[0]], params[1]);
       state = State::STATUS;
       break;
     }
@@ -65,9 +62,7 @@ void MessageHandler::handle_byte(uint8_t payload) {
     }
     case State::NOTE_ON_VELOCITY: {
       params[1] = payload;
-      if (instrument != nullptr) {
-        instrument->note_on(Note::notes[params[0]], params[1]);
-      }
+      allocator->note_on(channel_number, Note::pitches[params[0]], params[1]);
       state = State::STATUS;
       break;
     }

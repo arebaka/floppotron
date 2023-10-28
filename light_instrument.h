@@ -17,4 +17,5 @@ public:
   void reset() override;
   void note_on(const Note & note, uint8_t velocity) override;
   void note_off(const Note & note, uint8_t velocity) override;
+  const Note * get_current_note() const override;
 };

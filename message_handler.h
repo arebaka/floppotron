@@ -1,8 +1,8 @@
 #pragma once
 #include "i_message_handler.h"
-#include "i_instrument.h"
+#include "i_notes_allocator.h"
 
-class MessageHandler : IMessageHandler {
+class MessageHandler : public IMessageHandler {
 private:
   enum class State {
     STATUS, NOTE_OFF_PITCH, NOTE_OFF_VELOCITY, NOTE_ON_PITCH, NOTE_ON_VELOCITY,
@@ -13,9 +13,9 @@ private:
 
   const uint16_t n_instruments;
   IInstrument ** instruments;
-  IInstrument ** channel_instruments_map;
+  INotesAllocator * allocator;
+
   State state;
-  IInstrument * instrument;
   uint8_t channel_number;
   uint8_t params[2];
 
@@ -23,7 +23,7 @@ private:
   void handle_status(uint8_t payload);
 
 public:
-  MessageHandler(uint16_t n_instruments, IInstrument ** instruments, IInstrument ** channel_instruments_map);
+  MessageHandler(uint16_t n_instruments, IInstrument ** instruments, INotesAllocator * allocator);
 
   void handle_byte(uint8_t payload) override;
 };
