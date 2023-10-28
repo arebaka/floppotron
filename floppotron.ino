@@ -97,8 +97,8 @@ public:
   static const uint16_t TIME_TO_WAIT_AFTER_RESET = 100;
 
 protected:
-  const uint8_t direction_pin;
   const uint8_t step_pin;
+  const uint8_t direction_pin;
   const uint16_t n_positions;  // number of tracks of diskette
 
   uint8_t direction;
@@ -107,6 +107,7 @@ protected:
   const Note * current_note;
   Time current_halfperiod;
   Time inactive_time;
+  uint32_t note_steps_counter;
 
   void reverse() {
     direction = direction == HIGH ? LOW : HIGH;
@@ -115,14 +116,13 @@ protected:
 
   void toggle_stepping() {
     // reverse if end has been reached
-    if (
-      (direction == HIGH && position >= n_positions - 1)
-      || (direction == LOW && position <= 0)
-    ) {
+    int16_t steps_left = direction == HIGH ? n_positions - position - 1 : position;
+    if (steps_left <= 0) {
       reverse();
     }
 
     if (is_stepping) {
+      ++note_steps_counter;
       if (direction == HIGH) {
         ++position;
       } else {
@@ -135,8 +135,8 @@ protected:
   }
 
 public:
-  FloppyDriveHeadInstrument(uint8_t direction_pin, uint8_t step_pin, uint8_t n_positions = DEFAULT_N_POSITIONS)
-  : direction_pin(direction_pin), step_pin(step_pin), n_positions(n_positions) {}
+  FloppyDriveHeadInstrument(uint8_t step_pin, uint8_t direction_pin, uint8_t n_positions = DEFAULT_N_POSITIONS)
+  : step_pin(step_pin), direction_pin(direction_pin), n_positions(n_positions) {}
 
   void setup() override {
     pinMode(direction_pin, OUTPUT);
@@ -163,6 +163,7 @@ public:
     current_note = nullptr;
     current_halfperiod = 0;
     inactive_time = 0;
+    note_steps_counter = 0;
   }
 
   void reset() {
@@ -182,27 +183,67 @@ public:
 
   void note_on(const Note & note, uint8_t velocity) override {
     if (velocity == 0) {
-      note_off(note, velocity);
+      return note_off(note, velocity);
     }
-    else {
-      current_note = &note;
-      current_halfperiod = note.period / 2;
-    }
+    current_note = &note;
+    current_halfperiod = note.period / 2;
   }
 
   void note_off(const Note & note, uint8_t velocity) override {
     if (&note != current_note) {
       return;
     }
+    uint32_t steps_counter = note_steps_counter;  // save the value
     stop();
 
-    // reverse to direction with more available steps to hold a next note longer
-    if (
-      (direction == HIGH && position >= n_positions / 2)
-      || (direction == LOW && position < n_positions / 2)
-    ) {
+    // reverse to direction with more available steps to hold a next note without reversion if it is the same in duration
+    int16_t steps_left = direction == HIGH ? n_positions - position - 1 : position;
+    if (steps_left < steps_counter && n_positions - steps_left > steps_counter) {
       reverse();
     }
+  }
+};
+
+class LightInstrument : public IInstrument {
+protected:
+  const uint8_t pin;
+
+  bool is_lighting;
+  const Note * current_note;
+
+public:
+  LightInstrument(uint8_t pin)
+  : pin(pin) {}
+
+  void setup() override {
+    pinMode(pin, OUTPUT);
+    reset();
+  }
+
+  virtual void tick(Time time) override {}
+
+  virtual void stop() override {
+    digitalWrite(pin, LOW);
+    is_lighting = false;
+    current_note = nullptr;
+  }
+  virtual void reset() override {
+    stop();
+  }
+  virtual void note_on(const Note & note, uint8_t velocity) override {
+    if (velocity == 0) {
+      return note_off(note, velocity);
+    }
+
+    current_note = &note;
+    digitalWrite(pin, HIGH);
+    is_lighting = true;
+  }
+  virtual void note_off(const Note & note, uint8_t velocity) override {
+    if (&note != current_note) {
+      return;
+    }
+    stop();
   }
 };
 
@@ -252,8 +293,7 @@ private:
 
     uint8_t command_nibble = payload >> 4;
     if (command_nibble == 0xF) {
-      handle_status_meta(payload);
-      return;
+      return handle_status_meta(payload);
     }
 
     channel_number = payload & 0b00001111;
@@ -271,8 +311,7 @@ public:
 
     switch (state) {
       case State::STATUS: {
-        handle_status(payload);
-        break;
+        return handle_status(payload);
       }
       case State::NOTE_OFF_PITCH: {
         params[0] = payload;
@@ -313,12 +352,16 @@ const MessageHandler message_handler;
 
 void setup() {
   // TODO read config from EEPROM
-  instruments[0] = new FloppyDriveHeadInstrument(2, 3);
-  instruments[1] = new FloppyDriveHeadInstrument(4, 5);
-  instruments[2] = new FloppyDriveHeadInstrument(6, 7);
-  instruments[3] = new FloppyDriveHeadInstrument(8, 9);
-  instruments[4] = new FloppyDriveHeadInstrument(10, 11);
-  instruments[5] = new FloppyDriveHeadInstrument(12, 13);
+  instruments[0] = new LightInstrument(2);
+  instruments[1] = new LightInstrument(3);
+  instruments[2] = new LightInstrument(4);
+  instruments[3] = new LightInstrument(5);
+  instruments[4] = new LightInstrument(6);
+  instruments[5] = new LightInstrument(7);
+  instruments[6] = new LightInstrument(8);
+  instruments[7] = new LightInstrument(9);
+  instruments[8] = new LightInstrument(10);
+  instruments[9] = new LightInstrument(11);
   for (const auto & instrument : instruments) {
     if (instrument != nullptr) {
       instrument->setup();
@@ -331,7 +374,11 @@ void setup() {
   channel_instruments_map[2] = instruments[2];
   channel_instruments_map[3] = instruments[3];
   channel_instruments_map[4] = instruments[4];
-  channel_instruments_map[10] = instruments[5];
+  channel_instruments_map[5] = instruments[5];
+  channel_instruments_map[6] = instruments[6];
+  channel_instruments_map[9] = instruments[7];
+  channel_instruments_map[10] = instruments[8];
+  channel_instruments_map[11] = instruments[9];
 
   Serial.begin(57600);
 }
