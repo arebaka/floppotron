@@ -36,3 +36,7 @@ void LightInstrument::note_off(const Note & note, uint8_t velocity) {
   }
   stop();
 }
+
+const Note * LightInstrument::get_current_note() const {
+  return current_note;
+}

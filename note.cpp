@@ -1,6 +1,8 @@
 #include "note.h"
 
-const Note Note::notes[] = {
+const uint8_t Note::N_PITCHES = 128;
+
+const Note Note::pitches[] = {
   // octave -1
   Note(0), Note(1), Note(2), Note(3), Note(4), Note(5),
   Note(6), Note(7), Note(8), Note(9), Note(10), Note(11),
@@ -36,18 +38,18 @@ const Note Note::notes[] = {
   Note(126), Note(127)
 };
 
-char * Note::get_name(uint8_t number) {
+const char * Note::get_name(uint8_t pitch) {
   static const char prefixes[] = "CDEFGAB";
-  if (number < 21 || number > 127) {
+  if (pitch < 21 || pitch > 127) {
     return nullptr;
   }
 
   char * res = new char[4] {};
-  uint8_t octave = number / 12 - 1;
-  uint8_t offset = number % 12;
+  uint8_t octave = pitch / 12 - 1;
+  uint8_t offset = pitch % 12;
 
   if (offset == 1 || offset == 3 || offset == 6 || offset == 8 || offset == 10) {
-    --offset;  // for C#, D#, F#, G#, A#
+    offset--;  // for C#, D#, F#, G#, A#
     res[1] = '#';
     res[2] = '0' + octave;
   }
@@ -59,16 +61,17 @@ char * Note::get_name(uint8_t number) {
   return res;
 }
 
-constexpr float Note::get_freq(uint8_t number) {
-  return 440.0 * pow(2, (float) (number - 69) / 12);
+constexpr uint8_t Note::get_octave(uint8_t pitch) {
+  return pitch / 12;
 }
 
-constexpr float Note::get_period(uint8_t number) {
-  return 1000000.0 / get_freq(number);
+constexpr float Note::get_freq(uint8_t pitch) {
+  return 440.0 * pow(2, (float) (pitch - 69) / 12);
 }
 
-constexpr Note::Note(const char * name, float freq)
-  : period(1000000 / freq) {}
+constexpr float Note::get_period(uint8_t pitch) {
+  return 1000000.0 / get_freq(pitch);
+}
 
-constexpr Note::Note(uint8_t number)
-  : period(get_period(number)) {}
+constexpr Note::Note(uint8_t pitch)
+  : pitch(pitch), period(get_period(pitch)) {}

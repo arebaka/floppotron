@@ -16,11 +16,11 @@ void FloppyDriveHeadInstrument::toggle_stepping() {
   }
 
   if (is_stepping) {
-    ++note_steps_counter;
+    note_steps_counter++;
     if (direction == HIGH) {
-      ++position;
+      position++;
     } else {
-      --position;
+      position--;
     }
   }
 
@@ -94,4 +94,8 @@ void FloppyDriveHeadInstrument::note_off(const Note & note, uint8_t velocity) {
   if (steps_left < steps_counter && n_positions - steps_left > steps_counter) {
     reverse();
   }
+}
+
+const Note * FloppyDriveHeadInstrument::get_current_note() const {
+  return current_note;
 }

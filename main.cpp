@@ -1,18 +1,22 @@
-#include "types.h"
-
+#include "HardwareSerial.h"
 #include "i_instrument.h"
+#include "i_notes_allocator.h"
+#include "i_message_handler.h"
 #include "floppy_drive_head_instrument.h"
 #include "light_instrument.h"
-#include "i_message_handler.h"
+#include "instruments_queue.h"
+#include "notes_allocator.h"
 #include "message_handler.h"
 
 const Time TICK_LENGTH = 40;
 
-IInstrument * instruments[16] {};
-IInstrument * channel_instruments_map[16] {};
-MessageHandler message_handler(16, instruments, channel_instruments_map);
+const uint16_t N_INSTRUMENTS = 10;
+IInstrument ** instruments;
+INotesAllocator * notes_allocator;
+IMessageHandler * message_handler;
 
 void setup() {
+  instruments = new IInstrument *[N_INSTRUMENTS];
   // TODO read config from EEPROM
   instruments[0] = new LightInstrument(2);
   instruments[1] = new LightInstrument(3);
@@ -24,23 +28,35 @@ void setup() {
   instruments[7] = new LightInstrument(9);
   instruments[8] = new LightInstrument(10);
   instruments[9] = new LightInstrument(11);
-  for (auto & instrument : instruments) {
-    if (instrument != nullptr) {
-      instrument->setup();
+
+  for (uint16_t i = 0; i < N_INSTRUMENTS; i++) {
+    if (instruments[i] != nullptr) {
+      instruments[i]->setup();
     }
   }
 
-  // WARN: temp dirty hack, need a full allocator
-  channel_instruments_map[0] = instruments[0];
-  channel_instruments_map[1] = instruments[1];
-  channel_instruments_map[2] = instruments[2];
-  channel_instruments_map[3] = instruments[3];
-  channel_instruments_map[4] = instruments[4];
-  channel_instruments_map[5] = instruments[5];
-  channel_instruments_map[6] = instruments[6];
-  channel_instruments_map[9] = instruments[7];
-  channel_instruments_map[10] = instruments[8];
-  channel_instruments_map[11] = instruments[9];
+  InstrumentsQueue * group = new InstrumentsQueue(N_INSTRUMENTS, instruments);
+  notes_allocator = new NotesAllocator(N_INSTRUMENTS);
+
+  // TODO read config from EEPROM
+  notes_allocator->dedicate_group(0, group);
+  notes_allocator->dedicate_group(1, group);
+  notes_allocator->dedicate_group(2, group);
+  notes_allocator->dedicate_group(3, group);
+  notes_allocator->dedicate_group(4, group);
+  notes_allocator->dedicate_group(5, group);
+  notes_allocator->dedicate_group(6, group);
+  notes_allocator->dedicate_group(7, group);
+  notes_allocator->dedicate_group(8, group);
+  notes_allocator->dedicate_group(9, group);
+  notes_allocator->dedicate_group(10, group);
+  notes_allocator->dedicate_group(11, group);
+  notes_allocator->dedicate_group(12, group);
+  notes_allocator->dedicate_group(13, group);
+  notes_allocator->dedicate_group(14, group);
+  notes_allocator->dedicate_group(15, group);
+
+  message_handler = new MessageHandler(N_INSTRUMENTS, instruments, notes_allocator);
 
   Serial.begin(57600);
 }
@@ -48,15 +64,15 @@ void setup() {
 void loop() {
   while (Serial.available() > 0) {
     uint8_t data = (uint8_t) Serial.read();
-    message_handler.handle_byte(data);
     Serial.write(data);
+    message_handler->handle_byte(data);
   }
 
   delay(TICK_LENGTH / 1000);
   delayMicroseconds((uint16_t) TICK_LENGTH);
-  for (const auto & instrument : instruments) {
-    if (instrument != nullptr) {
-      instrument->tick(TICK_LENGTH);
+  for (uint8_t i = 0; i < N_INSTRUMENTS; i++) {
+    if (instruments[i] != nullptr) {
+      instruments[i]->tick(TICK_LENGTH);
     }
   }
 }

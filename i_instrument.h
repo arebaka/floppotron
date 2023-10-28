@@ -9,4 +9,5 @@ public:
   virtual void reset() = 0;
   virtual void note_on(const Note & note, uint8_t velocity) = 0;
   virtual void note_off(const Note & note, uint8_t velocity) = 0;
+  virtual const Note * get_current_note() const = 0;
 };
