@@ -51,7 +51,7 @@ void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Veloci
   }
 
   IInstrument * instrument = group->pop();
-  while (instrument->get_current_pitch() != Note::NULL_PITCH) {
+  if (instrument == nullptr) {
     group->push(instrument);
     instrument = group->pop();
   }

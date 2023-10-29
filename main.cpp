@@ -9,7 +9,9 @@
 #include "message_handler.h"
 
 const Time TICK_LENGTH = 10;
-const NInstrument N_INSTRUMENTS = 10;
+const NInstrument N_MELODIC_INSTRUMENTS = 8;
+const NInstrument N_PERCUSSION_INSTRUMENTS = 2;
+const NInstrument N_INSTRUMENTS = N_MELODIC_INSTRUMENTS + N_PERCUSSION_INSTRUMENTS;
 
 IInstrument ** instruments;
 INotesAllocator * notes_allocator;
@@ -35,26 +37,27 @@ void setup() {
     }
   }
 
-  IInstrumentsGroup * group = new InstrumentsQueue(N_INSTRUMENTS, instruments);
-  notes_allocator = new NotesAllocator(N_INSTRUMENTS);
+  IInstrumentsGroup * percussion_group = new InstrumentsQueue(N_PERCUSSION_INSTRUMENTS, instruments);
+  IInstrumentsGroup * melodic_group = new InstrumentsQueue(N_MELODIC_INSTRUMENTS, instruments + N_PERCUSSION_INSTRUMENTS);
+  notes_allocator = new NotesAllocator(N_MELODIC_INSTRUMENTS);
 
   // TODO read config from EEPROM
-  notes_allocator->dedicate_group(0, group);
-  notes_allocator->dedicate_group(1, group);
-  notes_allocator->dedicate_group(2, group);
-  notes_allocator->dedicate_group(3, group);
-  notes_allocator->dedicate_group(4, group);
-  notes_allocator->dedicate_group(5, group);
-  notes_allocator->dedicate_group(6, group);
-  notes_allocator->dedicate_group(7, group);
-  notes_allocator->dedicate_group(8, group);
-  notes_allocator->dedicate_group(9, group);
-  notes_allocator->dedicate_group(10, group);
-  notes_allocator->dedicate_group(11, group);
-  notes_allocator->dedicate_group(12, group);
-  notes_allocator->dedicate_group(13, group);
-  notes_allocator->dedicate_group(14, group);
-  notes_allocator->dedicate_group(15, group);
+  notes_allocator->dedicate_group(0, melodic_group);
+  notes_allocator->dedicate_group(1, melodic_group);
+  notes_allocator->dedicate_group(2, melodic_group);
+  notes_allocator->dedicate_group(3, melodic_group);
+  notes_allocator->dedicate_group(4, melodic_group);
+  notes_allocator->dedicate_group(5, melodic_group);
+  notes_allocator->dedicate_group(6, melodic_group);
+  notes_allocator->dedicate_group(7, melodic_group);
+  notes_allocator->dedicate_group(8, melodic_group);
+  notes_allocator->dedicate_group(9, percussion_group);
+  notes_allocator->dedicate_group(10, percussion_group);
+  notes_allocator->dedicate_group(11, melodic_group);
+  notes_allocator->dedicate_group(12, melodic_group);
+  notes_allocator->dedicate_group(13, melodic_group);
+  notes_allocator->dedicate_group(14, melodic_group);
+  notes_allocator->dedicate_group(15, melodic_group);
 
   message_handler = new MessageHandler(N_INSTRUMENTS, instruments, notes_allocator);
 
