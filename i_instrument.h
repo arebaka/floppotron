@@ -7,7 +7,7 @@ public:
   virtual void tick(Time time) = 0;
   virtual void stop() = 0;
   virtual void reset() = 0;
-  virtual void note_on(const Note & note, uint8_t velocity) = 0;
-  virtual void note_off(const Note & note, uint8_t velocity) = 0;
-  virtual const Note * get_current_note() const = 0;
+  virtual void note_on(Note::NPitch pitch, Velocity velocity) = 0;
+  virtual void note_off(Note::NPitch pitch, Velocity velocity) = 0;
+  virtual Note::NPitch get_current_pitch() const = 0;
 };

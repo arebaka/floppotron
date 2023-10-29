@@ -3,33 +3,36 @@
 
 class FloppyDriveHeadInstrument : public IInstrument {
 public:
-  static const uint16_t DEFAULT_N_POSITIONS;
-  static const uint16_t TIME_TO_WAIT_AFTER_RESET;
+  typedef int8_t NPosition;
+  typedef int8_t Direction;
+  typedef uint16_t NSteps;
+
+  static const NPosition DEFAULT_N_POSITIONS;
+  static const Time TIME_TO_WAIT_AFTER_SETUP;
 
 protected:
-  const uint8_t step_pin;
-  const uint8_t direction_pin;
-  const uint16_t n_positions;  // number of tracks of diskette
-
-  uint8_t direction;
-  int16_t position;
+  const NPin step_pin;
+  const NPin direction_pin;
+  const NPosition n_positions;  // number of tracks of diskette
+  Direction direction;
+  NPosition position;
   bool is_stepping;
-  const Note * current_note;
   Time current_halfperiod;
   Time inactive_time;
-  uint32_t note_steps_counter;
+  NSteps note_steps_counter;
+  Note::NPitch current_pitch;
 
   void reverse();
   void toggle_stepping();
 
 public:
-  FloppyDriveHeadInstrument(uint8_t step_pin, uint8_t direction_pin, uint8_t n_positions = DEFAULT_N_POSITIONS);
+  FloppyDriveHeadInstrument(NPin step_pin, NPin direction_pin, NPosition n_positions = DEFAULT_N_POSITIONS);
 
   void setup() override;
   void tick(Time time) override;
   void stop() override;
   void reset() override;
-  void note_on(const Note & note, uint8_t velocity) override;
-  void note_off(const Note & note, uint8_t velocity) override;
-  const Note * get_current_note() const override;
+  void note_on(Note::NPitch pitch, Velocity velocity) override;
+  void note_off(Note::NPitch pitch, Velocity velocity) override;
+  Note::NPitch get_current_pitch() const override;
 };

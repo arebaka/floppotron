@@ -4,8 +4,8 @@
 
 class INotesAllocator {
 public:
-  virtual uint16_t count_playing_notes() const = 0;
-  virtual void dedicate_group(uint8_t channel_number, IInstrumentsGroup * group) = 0;
-  virtual void note_on(uint8_t channel_number, const Note & note, uint8_t velocity) = 0;
-  virtual void note_off(uint8_t channel_number, const Note & note, uint8_t velocity) = 0;
+  virtual NPlayingNote count_playing_notes() const = 0;
+  virtual void dedicate_group(NChannel channel_number, IInstrumentsGroup * group) = 0;
+  virtual void note_on(NChannel channel_number, Note::NPitch pitch, Velocity velocity) = 0;
+  virtual void note_off(NChannel channel_number, Note::NPitch pitch, Velocity velocity) = 0;
 };

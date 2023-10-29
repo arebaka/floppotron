@@ -4,15 +4,16 @@
 
 class InstrumentsQueue : public IInstrumentsGroup {
 private:
-  const uint16_t n_instruments;
+  const NInstrument n_instruments;
+  NInstrument front_index;
+  NInstrument back_index;
+  NInstrument current_size;
   IInstrument ** instruments;
-  uint16_t front_index;
-  uint16_t back_index;
-  uint16_t current_size;
 
 public:
-  InstrumentsQueue(uint16_t n_instruments, IInstrument ** instruments);  // takes already setuped instruments
-  uint16_t size() const override;
+  InstrumentsQueue(NInstrument n_instruments, IInstrument ** instruments);  // takes already setuped instruments
+
+  NInstrument size() const override;
   bool is_empty() const override;
   bool is_full() const override;
   IInstrument * pop() override;

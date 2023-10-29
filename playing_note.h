@@ -4,8 +4,9 @@
 
 class PlayingNote {
 public:
-  const uint8_t channel_number;
-  const Note & note;
+  const NChannel channel_number;
+  const Note::NPitch pitch;
   IInstrument * instrument;
-  PlayingNote(uint8_t channel_number, const Note & note, IInstrument * instrument);
+
+  PlayingNote(NChannel channel_number, Note::NPitch pitch, IInstrument * instrument);
 };

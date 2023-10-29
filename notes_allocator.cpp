@@ -1,25 +1,25 @@
 #include "notes_allocator.h"
 
-const uint8_t NotesAllocator::N_CHANNELS = 16;
+const NChannel NotesAllocator::N_CHANNELS = 16;
 
-void NotesAllocator::push_playing_note(uint8_t channel_number, const Note & note, IInstrument * instrument) {
-  for (uint16_t i = 0; i < polyphony_limit; i++) {
+void NotesAllocator::push_playing_note(NChannel channel_number, Note::NPitch pitch, IInstrument * instrument) {
+  for (NPlayingNote i = 0; i < polyphony_limit; i++) {
     if (playing_notes[i] == nullptr) {
-      playing_notes[i] = new PlayingNote(channel_number, note, instrument);
+      playing_notes[i] = new PlayingNote(channel_number, pitch, instrument);
       n_playing_notes++;
       return;
     }
   }
 }
 
-PlayingNote * NotesAllocator::pop_playing_note(uint8_t channel_number, const Note & note) {
-  for (uint16_t i = 0; i < polyphony_limit; i++) {
+PlayingNote * NotesAllocator::pop_playing_note(NChannel channel_number, Note::NPitch pitch) {
+  for (NPlayingNote i = 0; i < polyphony_limit; i++) {
+    PlayingNote * playing_note = playing_notes[i];
     if (
-      playing_notes[i] != nullptr
-      && playing_notes[i]->channel_number == channel_number
-      && &playing_notes[i]->note == &note
+      playing_note != nullptr
+      && playing_note->channel_number == channel_number
+      && playing_note->pitch == pitch
     ) {
-      PlayingNote * playing_note = playing_notes[i];
       playing_notes[i] = nullptr;
       n_playing_notes--;
       return playing_note;
@@ -29,40 +29,40 @@ PlayingNote * NotesAllocator::pop_playing_note(uint8_t channel_number, const Not
   return nullptr;
 }
 
-NotesAllocator::NotesAllocator(uint16_t polyphony_limit)
+NotesAllocator::NotesAllocator(NPlayingNote polyphony_limit)
   : polyphony_limit(polyphony_limit), n_playing_notes(0)
 {
   channel_instruments_map = new IInstrumentsGroup *[N_CHANNELS] {};
   playing_notes = new PlayingNote *[polyphony_limit] {};
 }
 
-uint16_t NotesAllocator::count_playing_notes() const {
+NPlayingNote NotesAllocator::count_playing_notes() const {
   return n_playing_notes;
 }
 
-void NotesAllocator::dedicate_group(uint8_t channel_number, IInstrumentsGroup * group) {
+void NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup * group) {
   channel_instruments_map[channel_number] = group;
 }
 
-void NotesAllocator::note_on(uint8_t channel_number, const Note & note, uint8_t velocity) {
+void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Velocity velocity) {
   IInstrumentsGroup * group = channel_instruments_map[channel_number];
   if (group == nullptr || group->is_empty() || n_playing_notes >= polyphony_limit) {
     return;
   }
 
   IInstrument * instrument = group->pop();
-  while (instrument->get_current_note() != nullptr) {
+  while (instrument->get_current_pitch() != Note::NULL_PITCH) {
     group->push(instrument);
     instrument = group->pop();
   }
 
-  push_playing_note(channel_number, note, instrument);
-  instrument->note_on(note, velocity);
+  push_playing_note(channel_number, pitch, instrument);
+  instrument->note_on(pitch, velocity);
 }
 
-void NotesAllocator::note_off(uint8_t channel_number, const Note & note, uint8_t velocity) {
+void NotesAllocator::note_off(NChannel channel_number, Note::NPitch pitch, Velocity velocity) {
   IInstrumentsGroup * group = channel_instruments_map[channel_number];
-  PlayingNote * playing_note = pop_playing_note(channel_number, note);
+  PlayingNote * playing_note = pop_playing_note(channel_number, pitch);
   if (group == nullptr || playing_note == nullptr) {
     return;
   }
@@ -70,9 +70,9 @@ void NotesAllocator::note_off(uint8_t channel_number, const Note & note, uint8_t
   IInstrument * instrument = playing_note->instrument;
   delete playing_note;
 
-  instrument->note_off(note, velocity);
-  if (instrument->get_current_note() != nullptr) {
-    push_playing_note(channel_number, note, instrument);
+  instrument->note_off(pitch, velocity);
+  if (instrument->get_current_pitch() != Note::NULL_PITCH) {
+    push_playing_note(channel_number, pitch, instrument);
     return;
   }
 

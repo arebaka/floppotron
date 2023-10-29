@@ -1,10 +1,10 @@
 #include "instruments_queue.h"
 
-InstrumentsQueue::InstrumentsQueue(uint16_t n_instruments, IInstrument ** instruments)
+InstrumentsQueue::InstrumentsQueue(NInstrument n_instruments, IInstrument ** instruments)
   : n_instruments(n_instruments), instruments(instruments),
   front_index(0), back_index(-1), current_size(n_instruments) {}
 
-uint16_t InstrumentsQueue::size() const {
+NInstrument InstrumentsQueue::size() const {
   return current_size;
 }
 
@@ -29,7 +29,7 @@ IInstrument * InstrumentsQueue::pop() {
 }
 
 void InstrumentsQueue::push(IInstrument * instrument) {
-  if (current_size == n_instruments) {
+  if (current_size >= n_instruments) {
     return;
   }
 

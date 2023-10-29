@@ -1,5 +1,5 @@
-#include "HardwareSerial.h"
 #include "i_instrument.h"
+#include "i_instruments_group.h"
 #include "i_notes_allocator.h"
 #include "i_message_handler.h"
 #include "floppy_drive_head_instrument.h"
@@ -8,9 +8,9 @@
 #include "notes_allocator.h"
 #include "message_handler.h"
 
-const Time TICK_LENGTH = 40;
+const Time TICK_LENGTH = 10;
+const NInstrument N_INSTRUMENTS = 10;
 
-const uint16_t N_INSTRUMENTS = 10;
 IInstrument ** instruments;
 INotesAllocator * notes_allocator;
 IMessageHandler * message_handler;
@@ -29,13 +29,13 @@ void setup() {
   instruments[8] = new LightInstrument(10);
   instruments[9] = new LightInstrument(11);
 
-  for (uint16_t i = 0; i < N_INSTRUMENTS; i++) {
+  for (NInstrument i = 0; i < N_INSTRUMENTS; i++) {
     if (instruments[i] != nullptr) {
       instruments[i]->setup();
     }
   }
 
-  InstrumentsQueue * group = new InstrumentsQueue(N_INSTRUMENTS, instruments);
+  IInstrumentsGroup * group = new InstrumentsQueue(N_INSTRUMENTS, instruments);
   notes_allocator = new NotesAllocator(N_INSTRUMENTS);
 
   // TODO read config from EEPROM
@@ -70,7 +70,7 @@ void loop() {
 
   delay(TICK_LENGTH / 1000);
   delayMicroseconds((uint16_t) TICK_LENGTH);
-  for (uint8_t i = 0; i < N_INSTRUMENTS; i++) {
+  for (NInstrument i = 0; i < N_INSTRUMENTS; i++) {
     if (instruments[i] != nullptr) {
       instruments[i]->tick(TICK_LENGTH);
     }

@@ -3,19 +3,18 @@
 
 class LightInstrument : public IInstrument {
 protected:
-  const uint8_t pin;
-
+  const NPin pin;
   bool is_lighting;
-  const Note * current_note;
+  Note::NPitch current_pitch;
 
 public:
-  LightInstrument(uint8_t pin);
+  LightInstrument(NPin pin);
 
   void setup() override;
   void tick(Time time) override;
   void stop() override;
   void reset() override;
-  void note_on(const Note & note, uint8_t velocity) override;
-  void note_off(const Note & note, uint8_t velocity) override;
-  const Note * get_current_note() const override;
+  void note_on(Note::NPitch pitch, Velocity velocity) override;
+  void note_off(Note::NPitch pitch, Velocity velocity) override;
+  Note::NPitch get_current_pitch() const override;
 };

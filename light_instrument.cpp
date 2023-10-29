@@ -1,6 +1,6 @@
 #include "light_instrument.h"
 
-LightInstrument::LightInstrument(uint8_t pin)
+LightInstrument::LightInstrument(NPin pin)
   : pin(pin) {}
 
 void LightInstrument::setup() {
@@ -13,30 +13,29 @@ void LightInstrument::tick(Time time) {}
 void LightInstrument::stop() {
   digitalWrite(pin, LOW);
   is_lighting = false;
-  current_note = nullptr;
+  current_pitch = Note::NULL_PITCH;
 }
 
 void LightInstrument::reset() {
   stop();
 }
 
-void LightInstrument::note_on(const Note & note, uint8_t velocity) {
+void LightInstrument::note_on(Note::NPitch pitch, Velocity velocity) {
   if (velocity == 0) {
-    return note_off(note, velocity);
+    return note_off(pitch, velocity);
   }
 
-  current_note = &note;
+  current_pitch = pitch;
   digitalWrite(pin, HIGH);
   is_lighting = true;
 }
 
-void LightInstrument::note_off(const Note & note, uint8_t velocity) {
-  if (&note != current_note) {
-    return;
+void LightInstrument::note_off(Note::NPitch pitch, Velocity velocity) {
+  if (pitch == current_pitch) {
+    stop();
   }
-  stop();
 }
 
-const Note * LightInstrument::get_current_note() const {
-  return current_note;
+Note::NPitch LightInstrument::get_current_pitch() const {
+  return current_pitch;
 }
