@@ -57,7 +57,7 @@ const char * Note::get_name(NPitch pitch) {
     return nullptr;
   }
 
-  char * res = new char[4] {};
+  char * res = new char[4] {};  // WARN: need to free memory after using
   NOctave octave = get_octave(pitch);
   NPitch offset = pitch % 12;
 

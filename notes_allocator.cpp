@@ -36,6 +36,14 @@ NotesAllocator::NotesAllocator(NPlayingNote polyphony_limit)
   playing_notes = new PlayingNote *[polyphony_limit] {};
 }
 
+NotesAllocator::~NotesAllocator() {
+  for (NPlayingNote i = 0; i < polyphony_limit; i++) {
+    delete playing_notes[i];
+  }
+  delete [] playing_notes;
+  delete [] channel_instruments_map;
+}
+
 NPlayingNote NotesAllocator::count_playing_notes() const {
   return n_playing_notes;
 }

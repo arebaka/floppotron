@@ -16,6 +16,7 @@ private:
 
 public:
   NotesAllocator(NPlayingNote polyphony_limit);
+  ~NotesAllocator();
 
   NPlayingNote count_playing_notes() const override;
   void dedicate_group(NChannel channel_number, IInstrumentsGroup * group) override;
