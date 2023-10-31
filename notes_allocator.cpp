@@ -53,6 +53,10 @@ void NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup *
 }
 
 void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Velocity velocity) {
+  if (velocity == 0) {
+    return note_off(channel_number, pitch, velocity);
+  }
+
   IInstrumentsGroup * group = channel_instruments_map[channel_number];
   if (group == nullptr || group->is_empty() || n_playing_notes >= polyphony_limit) {
     return;
@@ -60,8 +64,7 @@ void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Veloci
 
   IInstrument * instrument = group->pop();
   if (instrument == nullptr) {
-    group->push(instrument);
-    instrument = group->pop();
+    return;
   }
 
   push_playing_note(channel_number, pitch, instrument);
