@@ -4,7 +4,7 @@
 class Note {
 public:
   typedef int8_t NPitch;
-  typedef uint8_t NOctave;
+  typedef int8_t NOctave;
 
   static const NPitch N_PITCHES;
   static const NPitch NULL_PITCH;

@@ -8,14 +8,17 @@ void FloppyDriveHeadInstrument::reverse() {
   digitalWrite(direction_pin, direction);
 }
 
-void FloppyDriveHeadInstrument::toggle_stepping() {
+void FloppyDriveHeadInstrument::toggle_phase() {
   // reverse if end has been reached
-  NSteps steps_left = direction == HIGH ? n_positions - position - 1 : position;
+  NStep steps_left = direction == HIGH ? n_positions - position - 1 : position;
   if (steps_left <= 0) {
     reverse();
   }
 
-  if (is_stepping) {
+  phase = phase == HIGH ? LOW : HIGH;
+  digitalWrite(step_pin, phase);
+
+  if (phase == HIGH) {
     note_steps_counter++;
     if (direction == HIGH) {
       position++;
@@ -23,9 +26,6 @@ void FloppyDriveHeadInstrument::toggle_stepping() {
       position--;
     }
   }
-
-  digitalWrite(step_pin, is_stepping ? LOW : HIGH);
-  is_stepping = !is_stepping;
 }
 
 FloppyDriveHeadInstrument::FloppyDriveHeadInstrument(NPin step_pin, NPin direction_pin, NPosition n_positions)
@@ -45,14 +45,14 @@ void FloppyDriveHeadInstrument::tick(Time time) {
 
   inactive_time += time;
   if (inactive_time >= current_halfperiod) {
-    toggle_stepping();
+    toggle_phase();
     inactive_time %= current_halfperiod;
   }
 }
 
 void FloppyDriveHeadInstrument::stop() {
   digitalWrite(step_pin, LOW);
-  is_stepping = false;
+  phase = LOW;
   current_pitch = Note::NULL_PITCH;
   current_halfperiod = 0;
   inactive_time = 0;
@@ -61,9 +61,8 @@ void FloppyDriveHeadInstrument::stop() {
 
 void FloppyDriveHeadInstrument::reset() {
   stop();
-  digitalWrite(direction_pin, LOW);
-  direction = LOW;
 
+  digitalWrite(direction_pin, LOW);
   for (NPosition i = 0; i < n_positions; i++) {
     digitalWrite(step_pin, HIGH);
     delay(1);
@@ -71,6 +70,8 @@ void FloppyDriveHeadInstrument::reset() {
     delay(1);
   }
 
+  digitalWrite(direction_pin, HIGH);
+  direction = HIGH;
   position = 0;
 }
 
@@ -86,11 +87,11 @@ void FloppyDriveHeadInstrument::note_off(Note::NPitch pitch, Velocity velocity) 
   if (pitch != current_pitch) {
     return;
   }
-  NSteps steps_counter = note_steps_counter;  // save the value
+  NStep steps_counter = note_steps_counter;  // save the value
   stop();
 
   // reverse to direction with more available steps to hold a next note without reversion if it is the same in duration
-  NSteps steps_left = direction == HIGH ? n_positions - position - 1 : position;
+  NStep steps_left = direction == HIGH ? n_positions - position - 1 : position;
   if (steps_left < steps_counter && n_positions - steps_left > steps_counter) {
     reverse();
   }

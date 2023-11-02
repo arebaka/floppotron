@@ -5,7 +5,8 @@ class FloppyDriveHeadInstrument : public IInstrument {
 public:
   typedef int8_t NPosition;
   typedef int8_t Direction;
-  typedef uint16_t NSteps;
+  typedef int8_t Phase;
+  typedef int16_t NStep;
 
   static const NPosition DEFAULT_N_POSITIONS;
   static const Time TIME_TO_WAIT_AFTER_SETUP;
@@ -16,14 +17,14 @@ protected:
   const NPosition n_positions;  // number of tracks of diskette
   Direction direction;
   NPosition position;
-  bool is_stepping;
+  Phase phase;
   Time current_halfperiod;
   Time inactive_time;
-  NSteps note_steps_counter;
+  NStep note_steps_counter;
   Note::NPitch current_pitch;
 
   void reverse();
-  void toggle_stepping();
+  void toggle_phase();
 
 public:
   FloppyDriveHeadInstrument(NPin step_pin, NPin direction_pin, NPosition n_positions = DEFAULT_N_POSITIONS);
