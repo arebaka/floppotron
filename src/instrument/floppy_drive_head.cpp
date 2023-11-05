@@ -1,17 +1,19 @@
-#include "floppy_drive_head_instrument.h"
+#include "floppy_drive_head.h"
 
-const FloppyDriveHeadInstrument::NPosition FloppyDriveHeadInstrument::DEFAULT_N_POSITIONS = 80;  // for general 3.5 and 5.25 720K+
-const Time FloppyDriveHeadInstrument::TIME_TO_WAIT_AFTER_SETUP = 100000;
+using instrument::FloppyDriveHead;
 
-void FloppyDriveHeadInstrument::reverse() {
+const FloppyDriveHead::NPosition FloppyDriveHead::DEFAULT_N_POSITIONS = 80;  // for general 3.5 and 5.25 720K+
+const Time FloppyDriveHead::TIME_TO_WAIT_AFTER_SETUP = 100000;
+
+void FloppyDriveHead::reverse() {
   direction = direction == HIGH ? LOW : HIGH;
   digitalWrite(direction_pin, direction);
 }
 
-void FloppyDriveHeadInstrument::toggle_phase() {
+void FloppyDriveHead::toggle_phase() {
   // reverse if end has been reached
   NStep steps_left = direction == HIGH ? n_positions - position - 1 : position;
-  if (steps_left <= 0) {
+  if (steps_left <= 1) {  // leave an extra step to avoid rattling when bumped
     reverse();
   }
 
@@ -28,17 +30,17 @@ void FloppyDriveHeadInstrument::toggle_phase() {
   }
 }
 
-FloppyDriveHeadInstrument::FloppyDriveHeadInstrument(NPin step_pin, NPin direction_pin, NPosition n_positions)
-  : step_pin(step_pin), direction_pin(direction_pin), n_positions(n_positions) {}
+FloppyDriveHead::FloppyDriveHead(NPin step_pin, NPin direction_pin, NPosition n_positions)
+: step_pin(step_pin), direction_pin(direction_pin), n_positions(n_positions) {}
 
-void FloppyDriveHeadInstrument::setup() {
+void FloppyDriveHead::setup() {
   pinMode(direction_pin, OUTPUT);
   pinMode(step_pin, OUTPUT);
   reset();
   delay(TIME_TO_WAIT_AFTER_SETUP / 1000);  // wait for safety
 }
 
-void FloppyDriveHeadInstrument::tick(Time time) {
+void FloppyDriveHead::tick(Time time) {
   if (current_pitch == Note::NULL_PITCH) {
     return;
   }
@@ -50,7 +52,7 @@ void FloppyDriveHeadInstrument::tick(Time time) {
   }
 }
 
-void FloppyDriveHeadInstrument::stop() {
+void FloppyDriveHead::stop() {
   digitalWrite(step_pin, LOW);
   phase = LOW;
   current_pitch = Note::NULL_PITCH;
@@ -59,7 +61,7 @@ void FloppyDriveHeadInstrument::stop() {
   note_steps_counter = 0;
 }
 
-void FloppyDriveHeadInstrument::reset() {
+void FloppyDriveHead::reset() {
   stop();
 
   digitalWrite(direction_pin, LOW);
@@ -75,7 +77,7 @@ void FloppyDriveHeadInstrument::reset() {
   position = 0;
 }
 
-void FloppyDriveHeadInstrument::note_on(Note::NPitch pitch, Velocity velocity) {
+void FloppyDriveHead::note_on(Note::NPitch pitch, Velocity velocity) {
   if (velocity == 0) {
     return note_off(pitch, velocity);
   }
@@ -83,7 +85,7 @@ void FloppyDriveHeadInstrument::note_on(Note::NPitch pitch, Velocity velocity) {
   current_halfperiod = Note::pitches[pitch].period / 2;
 }
 
-void FloppyDriveHeadInstrument::note_off(Note::NPitch pitch, Velocity velocity) {
+void FloppyDriveHead::note_off(Note::NPitch pitch, Velocity velocity) {
   if (pitch != current_pitch) {
     return;
   }
@@ -97,6 +99,6 @@ void FloppyDriveHeadInstrument::note_off(Note::NPitch pitch, Velocity velocity) 
   }
 }
 
-Note::NPitch FloppyDriveHeadInstrument::get_current_pitch() const {
+Note::NPitch FloppyDriveHead::get_current_pitch() const {
   return current_pitch;
 }

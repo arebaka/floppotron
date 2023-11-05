@@ -1,8 +1,8 @@
 #pragma once
 #include "i_instruments_group.h"
-#include "i_instrument.h"
 
-class InstrumentsQueue : public IInstrumentsGroup {
+namespace instruments_group {
+class Queue : public IInstrumentsGroup {
 private:
   const NInstrument n_instruments;
   NInstrument front_index;
@@ -11,7 +11,7 @@ private:
   IInstrument ** instruments;
 
 public:
-  InstrumentsQueue(NInstrument n_instruments, IInstrument ** instruments);  // takes already setuped instruments
+  Queue(NInstrument n_instruments, IInstrument ** instruments);  // takes already setuped instruments
 
   NInstrument size() const override;
   bool is_empty() const override;
@@ -19,3 +19,4 @@ public:
   IInstrument * pop() override;
   void push(IInstrument * instrument) override;
 };
+}

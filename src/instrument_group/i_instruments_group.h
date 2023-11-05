@@ -1,5 +1,5 @@
 #pragma once
-#include "i_instrument.h"
+#include "../instrument/i_instrument.h"
 
 class IInstrumentsGroup {
 public:

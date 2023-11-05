@@ -30,7 +30,7 @@ PlayingNote * NotesAllocator::pop_playing_note(NChannel channel_number, Note::NP
 }
 
 NotesAllocator::NotesAllocator(NPlayingNote polyphony_limit)
-  : polyphony_limit(polyphony_limit), n_playing_notes(0)
+: polyphony_limit(polyphony_limit), n_playing_notes(0)
 {
   channel_instruments_map = new IInstrumentsGroup *[N_CHANNELS] {};
   playing_notes = new PlayingNote *[polyphony_limit] {};
@@ -48,8 +48,9 @@ NPlayingNote NotesAllocator::count_playing_notes() const {
   return n_playing_notes;
 }
 
-void NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup * group) {
+INotesAllocator & NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup * group) {
   channel_instruments_map[channel_number] = group;
+  return *this;
 }
 
 void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Velocity velocity) {

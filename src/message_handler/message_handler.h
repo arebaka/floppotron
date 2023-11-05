@@ -1,6 +1,6 @@
 #pragma once
 #include "i_message_handler.h"
-#include "i_notes_allocator.h"
+#include "../notes_allocator/i_notes_allocator.h"
 
 class MessageHandler : public IMessageHandler {
 private:

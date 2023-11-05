@@ -1,14 +1,15 @@
 #pragma once
 #include "i_instrument.h"
 
-class LightInstrument : public IInstrument {
+namespace instrument {
+class Light : public IInstrument {
 protected:
   const NPin pin;
   bool is_lighting;
   Note::NPitch current_pitch;
 
 public:
-  LightInstrument(NPin pin);
+  Light(NPin pin);
 
   void setup() override;
   void tick(Time time) override;
@@ -18,3 +19,4 @@ public:
   void note_off(Note::NPitch pitch, Velocity velocity) override;
   Note::NPitch get_current_pitch() const override;
 };
+}

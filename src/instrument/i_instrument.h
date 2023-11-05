@@ -1,5 +1,5 @@
 #pragma once
-#include "note.h"
+#include "../note/note.h"
 
 class IInstrument {
 public:

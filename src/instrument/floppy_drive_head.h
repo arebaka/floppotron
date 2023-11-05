@@ -1,7 +1,8 @@
 #pragma once
 #include "i_instrument.h"
 
-class FloppyDriveHeadInstrument : public IInstrument {
+namespace instrument {
+class FloppyDriveHead : public IInstrument {
 public:
   typedef int8_t NPosition;
   typedef int8_t Direction;
@@ -27,7 +28,7 @@ protected:
   void toggle_phase();
 
 public:
-  FloppyDriveHeadInstrument(NPin step_pin, NPin direction_pin, NPosition n_positions = DEFAULT_N_POSITIONS);
+  FloppyDriveHead(NPin step_pin, NPin direction_pin, NPosition n_positions = DEFAULT_N_POSITIONS);
 
   void setup() override;
   void tick(Time time) override;
@@ -37,3 +38,4 @@ public:
   void note_off(Note::NPitch pitch, Velocity velocity) override;
   Note::NPitch get_current_pitch() const override;
 };
+}

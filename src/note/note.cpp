@@ -75,4 +75,4 @@ const char * Note::get_name(NPitch pitch) {
 }
 
 constexpr Note::Note(NPitch pitch)
-  : period(get_period(pitch)) {}
+: period(get_period(pitch)) {}

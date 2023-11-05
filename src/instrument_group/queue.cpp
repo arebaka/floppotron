@@ -1,22 +1,24 @@
-#include "instruments_queue.h"
+#include "queue.h"
 
-InstrumentsQueue::InstrumentsQueue(NInstrument n_instruments, IInstrument ** instruments)
-  : n_instruments(n_instruments), instruments(instruments),
+using instruments_group::Queue;
+
+Queue::Queue(NInstrument n_instruments, IInstrument ** instruments)
+: n_instruments(n_instruments), instruments(instruments),
   front_index(0), back_index(-1), current_size(n_instruments) {}
 
-NInstrument InstrumentsQueue::size() const {
+NInstrument Queue::size() const {
   return current_size;
 }
 
-bool InstrumentsQueue::is_empty() const {
+bool Queue::is_empty() const {
   return current_size == 0;
 }
 
-bool InstrumentsQueue::is_full() const {
+bool Queue::is_full() const {
   return current_size == n_instruments;
 }
 
-IInstrument * InstrumentsQueue::pop() {
+IInstrument * Queue::pop() {
   if (current_size == 0) {
     return nullptr;
   }
@@ -28,7 +30,7 @@ IInstrument * InstrumentsQueue::pop() {
   return instrument;
 }
 
-void InstrumentsQueue::push(IInstrument * instrument) {
+void Queue::push(IInstrument * instrument) {
   if (current_size >= n_instruments) {
     return;
   }

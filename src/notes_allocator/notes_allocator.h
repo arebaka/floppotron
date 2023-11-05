@@ -1,5 +1,6 @@
 #pragma once
 #include "i_notes_allocator.h"
+#include "../note/playing_note.h"
 
 class NotesAllocator : public INotesAllocator {
 public:
@@ -19,7 +20,7 @@ public:
   ~NotesAllocator();
 
   NPlayingNote count_playing_notes() const override;
-  void dedicate_group(NChannel channel_number, IInstrumentsGroup * group) override;
+  INotesAllocator & dedicate_group(NChannel channel_number, IInstrumentsGroup * group) override;
   void note_on(NChannel channel_number, Note::NPitch pitch, Velocity velocity) override;
   void note_off(NChannel channel_number, Note::NPitch pitch, Velocity velocity) override;
 };

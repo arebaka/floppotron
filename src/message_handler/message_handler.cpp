@@ -32,7 +32,7 @@ void MessageHandler::handle_status(uint8_t payload) {
 }
 
 MessageHandler::MessageHandler(NInstrument n_instruments, IInstrument ** instruments, INotesAllocator * allocator)
-  : state(State::STATUS), n_instruments(n_instruments), instruments(instruments), allocator(allocator) {}
+: state(State::STATUS), n_instruments(n_instruments), instruments(instruments), allocator(allocator) {}
 
 void MessageHandler::handle_byte(uint8_t payload) {
   if (payload & 0b10000000) {

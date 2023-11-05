@@ -1,6 +1,6 @@
 #pragma once
 #include "note.h"
-#include "i_instrument.h"
+#include "../instrument/i_instrument.h"
 
 class PlayingNote {
 public:
