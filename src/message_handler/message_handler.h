@@ -14,7 +14,7 @@ private:
   State state;
   const NInstrument n_instruments;
   IInstrument ** instruments;
-  INotesAllocator * allocator;
+  INotesAllocator & allocator;
   NChannel channel_number;
   uint8_t params[2];
 
@@ -22,7 +22,7 @@ private:
   void handle_status(uint8_t payload);
 
 public:
-  MessageHandler(NInstrument n_instruments, IInstrument ** instruments, INotesAllocator * allocator);
+  MessageHandler(NInstrument n_instruments, IInstrument ** instruments, INotesAllocator & allocator);
 
   void handle_byte(uint8_t payload) override;
 };

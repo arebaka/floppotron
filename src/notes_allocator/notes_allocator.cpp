@@ -12,9 +12,9 @@ void NotesAllocator::push_playing_note(NChannel channel_number, Note::NPitch pit
   }
 }
 
-PlayingNote * NotesAllocator::pop_playing_note(NChannel channel_number, Note::NPitch pitch) {
+const PlayingNote * NotesAllocator::pop_playing_note(NChannel channel_number, Note::NPitch pitch) {
   for (NPlayingNote i = 0; i < polyphony_limit; i++) {
-    PlayingNote * playing_note = playing_notes[i];
+    const PlayingNote * playing_note = playing_notes[i];
     if (
       playing_note != nullptr
       && playing_note->channel_number == channel_number
@@ -48,8 +48,8 @@ NPlayingNote NotesAllocator::count_playing_notes() const {
   return n_playing_notes;
 }
 
-INotesAllocator & NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup * group) {
-  channel_instruments_map[channel_number] = group;
+INotesAllocator & NotesAllocator::dedicate_group(NChannel channel_number, IInstrumentsGroup & group) {
+  channel_instruments_map[channel_number] = &group;
   return *this;
 }
 
@@ -74,7 +74,7 @@ void NotesAllocator::note_on(NChannel channel_number, Note::NPitch pitch, Veloci
 
 void NotesAllocator::note_off(NChannel channel_number, Note::NPitch pitch, Velocity velocity) {
   IInstrumentsGroup * group = channel_instruments_map[channel_number];
-  PlayingNote * playing_note = pop_playing_note(channel_number, pitch);
+  const PlayingNote * playing_note = pop_playing_note(channel_number, pitch);
   if (group == nullptr || playing_note == nullptr) {
     return;
   }

@@ -31,7 +31,7 @@ void MessageHandler::handle_status(uint8_t payload) {
   state = after_status_states_map[command_nibble & 0b00000111];
 }
 
-MessageHandler::MessageHandler(NInstrument n_instruments, IInstrument ** instruments, INotesAllocator * allocator)
+MessageHandler::MessageHandler(NInstrument n_instruments, IInstrument ** instruments, INotesAllocator & allocator)
 : state(State::STATUS), n_instruments(n_instruments), instruments(instruments), allocator(allocator) {}
 
 void MessageHandler::handle_byte(uint8_t payload) {
@@ -50,7 +50,7 @@ void MessageHandler::handle_byte(uint8_t payload) {
     }
     case State::NOTE_OFF_VELOCITY: {
       params[1] = payload;
-      allocator->note_off(channel_number, params[0], params[1]);
+      allocator.note_off(channel_number, params[0], params[1]);
       state = State::STATUS;
       break;
     }
@@ -61,7 +61,7 @@ void MessageHandler::handle_byte(uint8_t payload) {
     }
     case State::NOTE_ON_VELOCITY: {
       params[1] = payload;
-      allocator->note_on(channel_number, params[0], params[1]);
+      allocator.note_on(channel_number, params[0], params[1]);
       state = State::STATUS;
       break;
     }

@@ -24,6 +24,9 @@ protected:
   NStep note_steps_counter;
   Note::NPitch current_pitch;
 
+  virtual void write_direction();
+  virtual void write_phase();
+
   void reverse();
   void toggle_phase();
 
