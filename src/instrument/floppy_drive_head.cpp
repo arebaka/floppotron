@@ -20,12 +20,6 @@ void FloppyDriveHead::reverse() {
 }
 
 void FloppyDriveHead::toggle_phase() {
-  // reverse if end has been reached
-  const NStep steps_left = direction == HIGH ? n_positions - position - 1 : position;
-  if (steps_left <= 1) {  // leave an extra step to avoid rattling when bumped
-    reverse();
-  }
-
   phase = phase == HIGH ? LOW : HIGH;
   write_phase();
 
@@ -37,6 +31,12 @@ void FloppyDriveHead::toggle_phase() {
       position--;
     }
   }
+
+  // reverse if end has been reached
+  const NStep steps_left = direction == HIGH ? n_positions - position - 1 : position;
+  if (steps_left <= 10) {  // leave extra steps to avoid rattling when bumped
+    reverse();
+  }
 }
 
 FloppyDriveHead::FloppyDriveHead(NPin step_pin, NPin direction_pin, NPosition n_positions)
@@ -46,7 +46,7 @@ void FloppyDriveHead::setup() {
   pinMode(direction_pin, OUTPUT);
   pinMode(step_pin, OUTPUT);
   reset();
-  delay(TIME_TO_WAIT_AFTER_SETUP);  // wait for safety
+  // delay(TIME_TO_WAIT_AFTER_SETUP);  // wait for safety
 }
 
 void FloppyDriveHead::tick(Time time) {
@@ -55,6 +55,7 @@ void FloppyDriveHead::tick(Time time) {
   }
 
   inactive_time += time;
+
   if (inactive_time >= current_halfperiod) {
     toggle_phase();
     inactive_time %= current_halfperiod;
@@ -94,7 +95,7 @@ void FloppyDriveHead::note_on(Note::NPitch pitch, Velocity velocity) {
     return note_off(pitch, velocity);
   }
   current_pitch = pitch;
-  current_halfperiod = Note::pitches[pitch].period / 8;
+  current_halfperiod = Note::pitches[pitch].period / 2;
 }
 
 void FloppyDriveHead::note_off(Note::NPitch pitch, Velocity velocity) {

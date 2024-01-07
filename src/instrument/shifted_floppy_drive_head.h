@@ -7,8 +7,8 @@ class ShiftedFloppyDriveHead : public FloppyDriveHead {
 protected:
   util::ShiftRegister & shift_register;
 
-  void write_direction();
-  void write_phase();
+  void write_direction() override;
+  void write_phase() override;
 
 public:
   ShiftedFloppyDriveHead(
@@ -17,5 +17,6 @@ public:
   );
 
   void setup() override;
+  void tick(Time time) override;
 };
 }

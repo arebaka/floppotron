@@ -4,7 +4,7 @@
 
 using util::ShiftRegister;
 
-void ShiftRegister::set_state_bit(NBit bit, bool value) {
+void ShiftRegister::set_state_bit(NBit bit, Value value) {
   state = (state & ~1 << bit) | value << bit;
 }
 
@@ -26,12 +26,10 @@ void ShiftRegister::attach_instrument(IInstrument * instrument) {
 }
 
 void ShiftRegister::write(IInstrument * instrument, NPin pin, Value value) {
-  set_state_bit(pin, value != 0);
-  sync();
+  set_state_bit(pin, value);
 }
 
-void ShiftRegister::tick_write(IInstrument * instrument, NPin pin, Value value) {
-  set_state_bit(pin, value != 0);
+void ShiftRegister::tick(IInstrument * instrument) {
   n_ticked_instruments++;
 
   if (n_ticked_instruments >= n_instruments) {
